@@ -3,149 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Wireframe iPhone 11</title>
-    <meta name="description" content="Applicazione mobile wireframe in bianco e nero formato iPhone 11 con due pagine collegate." />
-    <meta property="og:title" content="Wireframe iPhone 11" />
-    <meta property="og:description" content="Applicazione mobile wireframe in bianco e nero formato iPhone 11 con due pagine collegate." />
+    <title>Wireframe App Ricette — iPhone 11</title>
+    <meta name="description" content="Prototipo wireframe in bianco e nero formato iPhone 11." />
+    <meta property="og:title" content="Wireframe App Ricette — iPhone 11" />
+    <meta property="og:description" content="Prototipo wireframe in bianco e nero formato iPhone 11." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        background-color: #ffffff;
-        color: #000000;
-        -webkit-font-smoothing: antialiased;
-      }
-
-      .wireframe-canvas {
-        background-color: #ffffff;
-        background-image:
-          linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-          linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-        background-size: 24px 24px;
-      }
-
-      .iphone-shell {
-        width: min(414px, calc((100dvh - 48px) * 414 / 896), calc(100vw - 32px));
-      }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <main class="wireframe-canvas min-h-dvh w-full flex items-center justify-center p-4 sm:p-6">
-      <!-- iPhone 11 wireframe device shell (414 x 896 screen proportion) -->
-      <div class="iphone-shell relative flex items-center justify-center select-none">
-        <!-- Left hardware buttons (mute + volume) -->
-        <div
-          aria-hidden="true"
-          class="absolute -left-[5px] top-[13%] w-[4px] h-[3.2%] border-2 border-r-0 border-black bg-white rounded-l-sm"
-        ></div>
-        <div
-          aria-hidden="true"
-          class="absolute -left-[5px] top-[20%] w-[4px] h-[6.2%] border-2 border-r-0 border-black bg-white rounded-l-sm"
-        ></div>
-        <div
-          aria-hidden="true"
-          class="absolute -left-[5px] top-[28%] w-[4px] h-[6.2%] border-2 border-r-0 border-black bg-white rounded-l-sm"
-        ></div>
-
-        <!-- Right hardware button (side/power) -->
-        <div
-          aria-hidden="true"
-          class="absolute -right-[5px] top-[22%] w-[4px] h-[9.5%] border-2 border-l-0 border-black bg-white rounded-r-sm"
-        ></div>
-
-        <!-- Outer device bezel -->
-        <div class="w-full aspect-[414/896] rounded-[48px] border-2 border-black bg-white p-3 shadow-[8px_8px_0_0_#000000]">
-          <!-- Inner iPhone 11 screen -->
-          <div
-            id="iphone-screen"
-            class="relative w-full h-full rounded-[36px] border-2 border-black bg-red-600 overflow-hidden flex flex-col transition-colors duration-150"
-          >
-            <!-- iPhone 11 wireframe notch -->
-            <div aria-hidden="true" class="w-full flex justify-center shrink-0">
-              <div class="w-[50%] h-[28px] border-2 border-t-0 border-black rounded-b-[18px] bg-white flex items-center justify-center gap-2.5">
-                <span class="w-10 h-[4px] border border-black rounded-full bg-white"></span>
-                <span class="w-2.5 h-2.5 border border-black rounded-full bg-white"></span>
-              </div>
-            </div>
-
-            <!-- Pagina 1: sfondo rosso e solo il bottone "avanti" -->
-            <section
-              id="pagina-1"
-              aria-label="Pagina 1"
-              class="flex-1 w-full flex items-center justify-center px-6"
-            >
-              <button
-                id="btn-avanti"
-                type="button"
-                class="min-h-[48px] min-w-[148px] px-8 py-3 border-2 border-black bg-white text-black text-base font-medium tracking-wide whitespace-nowrap shrink-0 shadow-[4px_4px_0_0_#000000] transition-[background-color,color,transform,box-shadow] duration-150 ease-out hover:bg-black hover:text-white active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000000] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black cursor-pointer"
-              >
-                avanti
-              </button>
-            </section>
-
-            <!-- Pagina 2: vuota in bianco e nero e solo il bottone "indietro" -->
-            <section
-              id="pagina-2"
-              aria-label="Pagina 2"
-              class="hidden flex-1 w-full flex items-center justify-center px-6"
-            >
-              <button
-                id="btn-indietro"
-                type="button"
-                class="min-h-[48px] min-w-[148px] px-8 py-3 border-2 border-black bg-white text-black text-base font-medium tracking-wide whitespace-nowrap shrink-0 shadow-[4px_4px_0_0_#000000] transition-[background-color,color,transform,box-shadow] duration-150 ease-out hover:bg-black hover:text-white active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0_0_#000000] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black cursor-pointer"
-              >
-                indietro
-              </button>
-            </section>
-
-            <!-- iPhone 11 wireframe home indicator -->
-            <div aria-hidden="true" class="w-full pb-2.5 pt-1 flex justify-center shrink-0">
-              <div class="w-[34%] h-[5px] border border-black rounded-full bg-white"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <script>
-      (function () {
-        var screen = document.getElementById('iphone-screen');
-        var pagina1 = document.getElementById('pagina-1');
-        var pagina2 = document.getElementById('pagina-2');
-        var btnAvanti = document.getElementById('btn-avanti');
-        var btnIndietro = document.getElementById('btn-indietro');
-
-        function mostraPagina(numero) {
-          if (numero === 1) {
-            pagina1.classList.remove('hidden');
-            pagina2.classList.add('hidden');
-            screen.classList.add('bg-red-600');
-            screen.classList.remove('bg-white');
-          } else {
-            pagina1.classList.add('hidden');
-            pagina2.classList.remove('hidden');
-            screen.classList.remove('bg-red-600');
-            screen.classList.add('bg-white');
-          }
-        }
-
-        btnAvanti.addEventListener('click', function () {
-          mostraPagina(2);
-        });
-
-        btnIndietro.addEventListener('click', function () {
-          mostraPagina(1);
-        });
-      })();
-    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
 
