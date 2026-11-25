@@ -28,7 +28,9 @@ import { NuovoPostScreen } from './screens/NuovoPostScreen';
 import { PostSalvatiScreen } from './screens/PostSalvatiScreen';
 import { ProfiloPersonaleScreen } from './screens/ProfiloPersonaleScreen';
 import { ProfiloUtenteScreen } from './screens/ProfiloUtenteScreen';
+import { ReelScreen } from './screens/ReelScreen';
 import { RicettaDettaglioScreen } from './screens/RicettaDettaglioScreen';
+import { StoriaPiattoScreen } from './screens/StoriaPiattoScreen';
 import {
   Chat,
   ImpostazioneProfilo,
@@ -41,8 +43,9 @@ import {
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('mappa');
   const [tabStacks, setTabStacks] = useState<Record<TabId, ScreenRoute[]>>({
-    mappa: [{ name: 'mappa' }],
     profilo: [{ name: 'profilo-personale' }],
+    mappa: [{ name: 'mappa' }],
+    reel: [{ name: 'reel' }],
     messaggi: [{ name: 'lista-chat' }],
   });
 
@@ -175,9 +178,12 @@ export default function App() {
       ],
       passaggi: [data.descrizione],
       luogoId: data.luogoId,
+      regioneId:
+        luogo?.tipo === 'Regione' ? luogo.id : luogo?.regioneId,
       luogoNome: luogo ? `${luogo.nome}, ${luogo.sottotitolo}` : 'Italia',
       autoreId: CURRENT_USER_ID,
       likes: 0,
+      saves: 0,
       hasVideo: data.hasVideo,
       commenti: [],
     };
@@ -185,8 +191,41 @@ export default function App() {
     popRoute();
   };
 
-  const handleUpdateProfile = (bio: string, avatarLabel: string) => {
-    setMe((prev) => ({ ...prev, bio, avatarLabel }));
+  const handleUpdatePost = (
+    ricettaId: string,
+    data: { titolo: string; descrizione: string; luogoId: string }
+  ) => {
+    const luogo = luoghiMap[data.luogoId];
+    setRicette((prev) =>
+      prev.map((r) =>
+        r.id === ricettaId
+          ? {
+              ...r,
+              titolo: data.titolo,
+              piatto: data.titolo.split(' ')[0] || r.piatto,
+              descrizione: data.descrizione,
+              luogoId: data.luogoId,
+              regioneId:
+                luogo?.tipo === 'Regione' ? luogo.id : luogo?.regioneId,
+              luogoNome: luogo
+                ? `${luogo.nome}, ${luogo.sottotitolo}`
+                : r.luogoNome,
+            }
+          : r
+      )
+    );
+  };
+
+  const handleDeletePost = (ricettaId: string) => {
+    setRicette((prev) => prev.filter((r) => r.id !== ricettaId));
+  };
+
+  const handleUpdateProfile = (
+    nome: string,
+    bio: string,
+    avatarLabel: string
+  ) => {
+    setMe((prev) => ({ ...prev, nome, bio, avatarLabel }));
   };
 
   const handleToggleSetting = (settingId: string) => {
@@ -307,20 +346,55 @@ export default function App() {
           />
         );
 
+      case 'reel': {
+        const videoReels = ricette.filter((r) => r.hasVideo);
+        return (
+          <ReelScreen
+            reels={videoReels.length > 0 ? videoReels : ricette}
+            utentiMap={utentiMap}
+            likedIds={likedIds}
+            savedIds={savedIds}
+            followingIds={followingIds}
+            onToggleLike={handleToggleLike}
+            onToggleSave={handleToggleSave}
+            onToggleFollow={handleToggleFollow}
+            onAddComment={handleAddComment}
+            onOpenProfilo={(utenteId) =>
+              pushRoute({ name: 'profilo-utente', utenteId })
+            }
+            onOpenRicetta={(ricettaId) =>
+              pushRoute({ name: 'ricetta-dettaglio', ricettaId })
+            }
+          />
+        );
+      }
+
       case 'luogo-panel': {
         const luogo = luoghiMap[currentRoute.luogoId] || INITIAL_LUOGHI[0];
         const ricetteLuogo =
-          luogo.id === 'italia'
-            ? ricette
+          luogo.tipo === 'Regione'
+            ? ricette.filter(
+                (r) => r.luogoId === luogo.id || r.regioneId === luogo.id
+              )
             : ricette.filter((r) => r.luogoId === luogo.id);
         const legendsLuogo =
-          luogo.id === 'italia'
-            ? INITIAL_UTENTI
+          luogo.tipo === 'Regione'
+            ? INITIAL_UTENTI.filter(
+                (u) => u.luogoId === luogo.id || u.regioneId === luogo.id
+              )
             : INITIAL_UTENTI.filter((u) => u.luogoId === luogo.id);
+
+        const cittaRegione =
+          luogo.tipo === 'Regione'
+            ? INITIAL_LUOGHI.filter(
+                (l) => l.tipo === 'Città' && l.regioneId === luogo.id
+              )
+            : [];
 
         return (
           <LuogoPanelScreen
             luogo={luogo}
+            cittaRegione={cittaRegione}
             ricette={ricetteLuogo}
             localLegends={legendsLuogo}
             utentiMap={utentiMap}
@@ -334,6 +408,9 @@ export default function App() {
             }
             onOpenProfilo={(utenteId) =>
               pushRoute({ name: 'profilo-utente', utenteId })
+            }
+            onSelectLuogo={(luogoId) =>
+              pushRoute({ name: 'luogo-panel', luogoId })
             }
           />
         );
@@ -371,8 +448,17 @@ export default function App() {
             onOpenProfilo={(utenteId) =>
               pushRoute({ name: 'profilo-utente', utenteId })
             }
+            onOpenStoria={(ricettaId) =>
+              pushRoute({ name: 'storia-piatto', ricettaId })
+            }
           />
         );
+      }
+
+      case 'storia-piatto': {
+        const ricetta =
+          ricette.find((r) => r.id === currentRoute.ricettaId) || ricette[0];
+        return <StoriaPiattoScreen ricetta={ricetta} onBack={popRoute} />;
       }
 
       case 'profilo-utente': {
@@ -401,12 +487,17 @@ export default function App() {
             me={me}
             savedCount={savedRicette.length}
             myPosts={myPosts}
+            likedIds={likedIds}
+            savedIds={savedIds}
+            luoghi={INITIAL_LUOGHI}
             onOpenPostSalvati={() => pushRoute({ name: 'post-salvati' })}
             onOpenNuovoPost={() => pushRoute({ name: 'nuovo-post' })}
             onOpenModificaProfilo={() => pushRoute({ name: 'modifica-profilo' })}
             onOpenRicetta={(ricettaId) =>
               pushRoute({ name: 'ricetta-dettaglio', ricettaId })
             }
+            onUpdatePost={handleUpdatePost}
+            onDeletePost={handleDeletePost}
           />
         );
 

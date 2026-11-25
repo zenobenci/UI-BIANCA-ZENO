@@ -1,5 +1,5 @@
 import { FormEvent, useRef, useState } from 'react';
-import { Bookmark, Heart, MessageCircle } from 'lucide-react';
+import { BookOpen, Bookmark, Heart, MessageCircle } from 'lucide-react';
 import { TopBar } from '../components/TopBar';
 import { WireframeMedia } from '../components/WireframeMedia';
 import { Ricetta, Utente } from '../types';
@@ -14,6 +14,7 @@ interface RicettaDettaglioScreenProps {
   onToggleSave: (ricettaId: string) => void;
   onAddComment: (ricettaId: string, testo: string) => void;
   onOpenProfilo: (utenteId: string) => void;
+  onOpenStoria: (ricettaId: string) => void;
 }
 
 export function RicettaDettaglioScreen({
@@ -26,6 +27,7 @@ export function RicettaDettaglioScreen({
   onToggleSave,
   onAddComment,
   onOpenProfilo,
+  onOpenStoria,
 }: RicettaDettaglioScreenProps) {
   const [commentText, setCommentText] = useState('');
   const [showCommentBox, setShowCommentBox] = useState(true);
@@ -56,9 +58,22 @@ export function RicettaDettaglioScreen({
         />
 
         <div className="space-y-1.5">
-          <h2 className="text-base font-bold text-black leading-tight">
-            {ricetta.titolo}
-          </h2>
+          <div className="flex items-start justify-between gap-2">
+            <h2 className="text-base font-bold text-black leading-tight">
+              {ricetta.titolo}
+            </h2>
+            {ricetta.storia && (
+              <button
+                type="button"
+                onClick={() => onOpenStoria(ricetta.id)}
+                aria-label={`Leggi la storia di ${ricetta.piatto}`}
+                title="Storia del piatto"
+                className="w-7 h-7 border border-black bg-white text-black flex items-center justify-center shrink-0 hover:bg-black hover:text-white transition-colors cursor-pointer"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
           <div className="flex items-center justify-between gap-2 text-xs text-neutral-600">
             <span>{ricetta.luogoNome}</span>
             {autore && (

@@ -1,10 +1,12 @@
-export type TabId = 'mappa' | 'profilo' | 'messaggi';
+export type TabId = 'profilo' | 'mappa' | 'reel' | 'messaggi';
 
 export type ScreenRoute =
   | { name: 'mappa' }
+  | { name: 'reel' }
   | { name: 'luogo-panel'; luogoId: string }
   | { name: 'lista-post-cercati'; query: string }
   | { name: 'ricetta-dettaglio'; ricettaId: string }
+  | { name: 'storia-piatto'; ricettaId: string }
   | { name: 'profilo-utente'; utenteId: string }
   | { name: 'profilo-personale' }
   | { name: 'post-salvati' }
@@ -21,8 +23,10 @@ export interface Luogo {
   nome: string;
   tipo: TipoLuogo;
   sottotitolo: string;
-  x: number; // percentuale 0-100 su mappa
-  y: number; // percentuale 0-100 su mappa
+  regioneId?: string;
+  x: number; // coordinata X in viewBox 0-400
+  y: number; // coordinata Y in viewBox 0-500
+  svgPath?: string; // path SVG per le regioni italiane
 }
 
 export interface Utente {
@@ -32,6 +36,7 @@ export interface Utente {
   bio: string;
   citta: string;
   luogoId: string;
+  regioneId?: string;
   isLocalLegend: boolean;
   avatarLabel: string;
 }
@@ -43,6 +48,19 @@ export interface Commento {
   ora: string;
 }
 
+export interface StoriaPiatto {
+  titolo: string;
+  espertoNome: string;
+  ruoloEsperto: string;
+  epocaOrigine: string;
+  sezioni: {
+    sottotitolo: string;
+    testo: string;
+    immagineLabel?: string;
+    didascalia?: string;
+  }[];
+}
+
 export interface Ricetta {
   id: string;
   titolo: string;
@@ -51,11 +69,14 @@ export interface Ricetta {
   ingredienti: string[];
   passaggi: string[];
   luogoId: string;
+  regioneId?: string;
   luogoNome: string;
   autoreId: string;
   likes: number;
+  saves?: number;
   hasVideo?: boolean;
   commenti: Commento[];
+  storia?: StoriaPiatto;
 }
 
 export interface MessaggioChat {

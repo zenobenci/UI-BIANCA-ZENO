@@ -1,4 +1,4 @@
-import { Map, MessageSquare, User } from 'lucide-react';
+import { Clapperboard, Map, MessageSquare, User } from 'lucide-react';
 import { TabId } from '../types';
 
 interface BottomNavProps {
@@ -8,15 +8,16 @@ interface BottomNavProps {
 
 export function BottomNav({ activeTab, onSelectTab }: BottomNavProps) {
   const tabs: { id: TabId; label: string; Icon: typeof Map }[] = [
-    { id: 'mappa', label: 'Mappa', Icon: Map },
     { id: 'profilo', label: 'Profilo', Icon: User },
+    { id: 'mappa', label: 'Mappa', Icon: Map },
+    { id: 'reel', label: 'Reel', Icon: Clapperboard },
     { id: 'messaggi', label: 'Messaggi', Icon: MessageSquare },
   ];
 
   return (
     <nav
       aria-label="Navigazione principale"
-      className="shrink-0 bg-white border-t-2 border-black grid grid-cols-3 h-[58px]"
+      className="shrink-0 bg-white border-t-2 border-black grid grid-cols-4 h-[58px]"
     >
       {tabs.map(({ id, label, Icon }) => {
         const isActive = activeTab === id;

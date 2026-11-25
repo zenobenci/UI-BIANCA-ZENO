@@ -1,5 +1,13 @@
-import { FormEvent, useState } from 'react';
-import { MapPin, Search } from 'lucide-react';
+import {
+  FormEvent,
+  PointerEvent,
+  WheelEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { MapPin, Minus, Plus, RotateCcw, Search, X } from 'lucide-react';
 import { Luogo } from '../types';
 
 interface MappaScreenProps {
@@ -8,129 +16,357 @@ interface MappaScreenProps {
   onSearch: (query: string) => void;
 }
 
+const ZOOM_THRESHOLD = 1.55;
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 3.2;
+
 export function MappaScreen({
   luoghi,
   onSelectLuogo,
   onSearch,
 }: MappaScreenProps) {
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = (e: FormEvent) => {
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [hoveredRegionId, setHoveredRegionId] = useState<string | null>(null);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{
+    active: boolean;
+    startX: number;
+    startY: number;
+    origPanX: number;
+    origPanY: number;
+    moved: boolean;
+  }>({
+    active: false,
+    startX: 0,
+    startY: 0,
+    origPanX: 0,
+    origPanY: 0,
+    moved: false,
+  });
+
+  const regioni = useMemo(
+    () => luoghi.filter((l) => l.tipo === 'Regione'),
+    [luoghi]
+  );
+  const citta = useMemo(
+    () => luoghi.filter((l) => l.tipo === 'Città'),
+    [luoghi]
+  );
+
+  const isZoomed = zoom >= ZOOM_THRESHOLD;
+
+  useEffect(() => {
+    if (isSearchOpen) {
+      setTimeout(() => searchInputRef.current?.focus(), 0);
+    }
+  }, [isSearchOpen]);
+
+  const clampPan = (nx: number, ny: number, targetZoom: number) => {
+    if (targetZoom <= 1) return { x: 0, y: 0 };
+    const el = containerRef.current;
+    const w = el ? el.clientWidth : 380;
+    const h = el ? el.clientHeight : 600;
+    const maxX = ((targetZoom - 1) * w) / 2 + 40;
+    const maxY = ((targetZoom - 1) * h) / 2 + 40;
+    return {
+      x: Math.max(-maxX, Math.min(maxX, nx)),
+      y: Math.max(-maxY, Math.min(maxY, ny)),
+    };
+  };
+
+  const applyZoom = (nextZoom: number) => {
+    const clamped = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, nextZoom));
+    setZoom(clamped);
+    setPan((prev) => clampPan(prev.x, prev.y, clamped));
+  };
+
+  const handleZoomIn = () => {
+    if (zoom < ZOOM_THRESHOLD) {
+      applyZoom(1.85);
+    } else {
+      applyZoom(Number((zoom + 0.5).toFixed(2)));
+    }
+  };
+
+  const handleZoomOut = () => {
+    const next = zoom - 0.55;
+    applyZoom(next <= 1.15 ? 1 : Number(next.toFixed(2)));
+  };
+
+  const handleResetZoom = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  };
+
+  const handleWheel = (e: WheelEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.25 : -0.25;
+    applyZoom(Number((zoom + delta).toFixed(2)));
+  };
+
+  const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('button, input, form')) {
+      return;
+    }
+    dragRef.current = {
+      active: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      origPanX: pan.x,
+      origPanY: pan.y,
+      moved: false,
+    };
+  };
+
+  const handlePointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current.active) return;
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      dragRef.current.moved = true;
+    }
+    if (zoom > 1 && dragRef.current.moved) {
+      setPan(
+        clampPan(
+          dragRef.current.origPanX + dx,
+          dragRef.current.origPanY + dy,
+          zoom
+        )
+      );
+    }
+  };
+
+  const handlePointerUp = () => {
+    dragRef.current.active = false;
+  };
+
+  const handleRegionClick = (regioneId: string) => {
+    if (dragRef.current.moved) return;
+    onSelectLuogo(regioneId);
+  };
+
+  const handleSubmitSearch = (e: FormEvent) => {
     e.preventDefault();
     onSearch(searchText.trim());
   };
 
   return (
-    <div className="relative flex-1 w-full h-full flex flex-col bg-neutral-100 overflow-hidden">
-      {/* Barra Cerca fissa in alto */}
-      <div className="relative z-20 p-3 bg-white/95 border-b-2 border-black">
-        <form onSubmit={handleSubmit} className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-neutral-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              placeholder="Cerca piatto (es. Carbonara, Pizza)..."
-              aria-label="Cerca"
-              className="w-full h-[42px] pl-8 pr-3 border border-black bg-white text-xs text-black placeholder:text-neutral-500 focus:outline-2 focus:outline-black"
-            />
-          </div>
+    <div className="relative flex-1 w-full h-full flex flex-col bg-neutral-100 overflow-hidden select-none">
+      {/* Lente di ricerca in alto a destra */}
+      <div className="absolute top-3 left-3 right-3 z-30 flex justify-end pointer-events-none">
+        {!isSearchOpen ? (
           <button
-            type="submit"
-            className="h-[42px] px-3.5 border border-black bg-black text-white text-xs font-semibold whitespace-nowrap shrink-0 hover:bg-neutral-800 active:bg-neutral-900 cursor-pointer"
+            type="button"
+            onClick={() => setIsSearchOpen(true)}
+            aria-label="Apri ricerca"
+            className="w-[42px] h-[42px] border-2 border-black bg-white text-black flex items-center justify-center shadow-[3px_3px_0_0_#000000] hover:bg-black hover:text-white transition-colors pointer-events-auto cursor-pointer shrink-0"
           >
-            Cerca
+            <Search className="w-5 h-5" />
           </button>
-        </form>
+        ) : (
+          <div className="w-full bg-white border-2 border-black p-2 shadow-[4px_4px_0_0_#000000] pointer-events-auto">
+            <form onSubmit={handleSubmitSearch} className="flex items-center gap-1.5">
+              <Search className="w-4 h-4 text-neutral-500 shrink-0 ml-1" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                placeholder="Cerca piatto (es. Carbonara, Pizza)..."
+                aria-label="Cerca piatto"
+                className="flex-1 min-w-0 h-[38px] px-2 bg-white text-xs text-black placeholder:text-neutral-500 focus:outline-none"
+              />
+              <button
+                type="submit"
+                className="h-[38px] px-3 border border-black bg-black text-white text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                Cerca
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsSearchOpen(false)}
+                aria-label="Chiudi ricerca"
+                className="w-[38px] h-[38px] border border-black bg-white text-black flex items-center justify-center hover:bg-neutral-100 cursor-pointer shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+        )}
       </div>
 
-      {/* Mappa libera da esplorare (wireframe interattivo B/N) */}
+      {/* Viewport Mappa Italia */}
       <div
-        aria-label="Mappa libera da esplorare"
-        className="relative flex-1 w-full overflow-hidden bg-neutral-50"
+        ref={containerRef}
+        onWheel={handleWheel}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        aria-label="Mappa dell'Italia divisa per regioni"
+        className={`relative flex-1 w-full h-full flex items-center justify-center overflow-hidden bg-neutral-100 ${
+          zoom > 1 ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
+        }`}
       >
-        {/* Griglia wireframe geografica + sagoma stilizzata Italia in B/N */}
-        <svg
+        {/* Reticolo sfondo fisso wireframe */}
+        <div
           aria-hidden="true"
-          viewBox="0 0 400 620"
-          preserveAspectRatio="none"
-          className="absolute inset-0 w-full h-full pointer-events-none"
+          className="absolute inset-0 pointer-events-none opacity-60"
+          style={{
+            backgroundImage:
+              'linear-gradient(to right, #d4d4d4 1px, transparent 1px), linear-gradient(to bottom, #d4d4d4 1px, transparent 1px)',
+            backgroundSize: '28px 28px',
+          }}
+        />
+
+        {/* Stage trasformabile Italia (400x500) */}
+        <div
+          className="relative w-[92%] max-w-[360px] aspect-[400/500] transition-transform duration-150 ease-out"
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: 'center center',
+          }}
         >
-          {/* Reticolo cartografico */}
-          <defs>
-            <pattern
-              id="map-grid"
-              width="40"
-              height="40"
-              patternUnits="userSpaceOnUse"
+          {/* Italia divisa in 20 regioni SVG + sagome paesi limitrofi */}
+          <svg
+            viewBox="0 0 400 500"
+            className="w-full h-full overflow-visible"
+            role="img"
+            aria-label="Cartina dell'Italia divisa per regioni con sagome dei paesi limitrofi"
+          >
+            {/* Sagome dei paesi limitrofi (non cliccabili, senza etichette) */}
+            <g
+              aria-hidden="true"
+              className="pointer-events-none"
+              fill="#e5e5e5"
+              stroke="#a3a3a3"
+              strokeWidth={isZoomed ? 0.9 / Math.sqrt(zoom) : 1}
+              strokeDasharray="3 2"
+              strokeLinejoin="round"
             >
-              <path
-                d="M 40 0 L 0 0 0 40"
-                fill="none"
-                stroke="#e5e5e5"
-                strokeWidth="1"
-              />
-            </pattern>
-          </defs>
-          <rect width="400" height="620" fill="url(#map-grid)" />
+              {/* Francia */}
+              <path d="M -140 -80 L 72 -80 L 66 15 L 84 56 L 48 64 L 38 92 L 44 126 L 42 150 L 18 164 L -35 175 L -140 198 Z" />
+              {/* Svizzera */}
+              <path d="M 72 -80 L 165 -80 L 162 28 L 142 40 L 106 54 L 84 56 L 66 15 Z" />
+              {/* Austria */}
+              <path d="M 165 -80 L 350 -80 L 330 22 L 260 40 L 220 34 L 186 20 L 142 40 L 162 28 Z" />
+              {/* Slovenia */}
+              <path d="M 260 40 L 330 22 L 354 68 L 308 98 L 258 102 L 274 78 Z" />
+              {/* Croazia / fascia adriatica orientale */}
+              <path d="M 258 102 L 308 98 L 354 68 L 520 55 L 520 315 L 442 285 L 385 225 L 336 164 L 292 128 L 272 114 Z" />
+              {/* Corsica */}
+              <path d="M 66 226 L 76 238 L 78 266 L 68 282 L 54 274 L 54 244 Z" />
+              {/* Costa nordafricana (Tunisia) */}
+              <path d="M -100 488 L 48 482 L 92 508 L 116 565 L -100 565 Z" />
+            </g>
 
-          {/* Linee topografiche wireframe */}
-          <path
-            d="M 95 100 L 185 88 L 245 130 L 220 185 L 250 265 L 295 360 L 330 435 L 290 480 L 265 535 L 200 570 L 160 520 L 205 450 L 180 355 L 135 280 L 125 205 L 85 160 Z"
-            fill="#ffffff"
-            stroke="#000000"
-            strokeWidth="1.5"
-            strokeDasharray="4 3"
-          />
-          {/* Strade / collegamenti wireframe */}
-          <path
-            d="M 136 160 Q 175 215 188 212 T 208 360 T 256 428"
-            fill="none"
-            stroke="#a3a3a3"
-            strokeWidth="1.2"
-          />
-          <circle
-            cx="200"
-            cy="310"
-            r="140"
-            fill="none"
-            stroke="#d4d4d4"
-            strokeWidth="1"
-            strokeDasharray="2 4"
-          />
-        </svg>
+            {regioni.map((regione) => {
+              const isHovered = hoveredRegionId === regione.id;
+              return (
+                <path
+                  key={regione.id}
+                  d={regione.svgPath}
+                  onMouseEnter={() => setHoveredRegionId(regione.id)}
+                  onMouseLeave={() => setHoveredRegionId(null)}
+                  onClick={() => handleRegionClick(regione.id)}
+                  className="cursor-pointer transition-colors duration-100"
+                  fill={isHovered ? '#e5e5e5' : '#ffffff'}
+                  stroke="#000000"
+                  strokeWidth={isZoomed ? 1.1 / Math.sqrt(zoom) : 1.4}
+                  strokeLinejoin="round"
+                />
+              );
+            })}
+          </svg>
 
-        {/* Etichetta titolo mappa */}
-        <div className="relative z-10 m-3 inline-block bg-white border border-black px-2.5 py-1">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-black">
-            Mappa libera da esplorare
-          </p>
-          <p className="text-[10px] text-neutral-600">
-            Tocca una città, regione o paese
-          </p>
+          {/* NON ZOOMATA: mostra solo i nomi delle regioni */}
+          {!isZoomed &&
+            regioni.map((regione) => (
+              <button
+                key={`label-${regione.id}`}
+                type="button"
+                onClick={() => handleRegionClick(regione.id)}
+                style={{
+                  left: `${(regione.x / 400) * 100}%`,
+                  top: `${(regione.y / 500) * 100}%`,
+                }}
+                className="absolute z-10 -translate-x-1/2 -translate-y-1/2 px-1.5 py-0.5 bg-white/95 border border-black text-[8.5px] font-bold text-black leading-none whitespace-nowrap hover:bg-black hover:text-white transition-colors cursor-pointer"
+              >
+                {regione.nome}
+              </button>
+            ))}
+
+          {/* ZOOMATA: compaiono le città cliccabili */}
+          {isZoomed &&
+            citta.map((city) => {
+              const invScale = 1 / Math.pow(zoom, 0.72);
+              return (
+                <button
+                  key={`city-${city.id}`}
+                  type="button"
+                  onClick={() => {
+                    if (!dragRef.current.moved) {
+                      onSelectLuogo(city.id);
+                    }
+                  }}
+                  style={{
+                    left: `${(city.x / 400) * 100}%`,
+                    top: `${(city.y / 500) * 100}%`,
+                    transform: `translate(-50%, -50%) scale(${invScale})`,
+                  }}
+                  className="absolute z-20 min-h-[34px] px-2 py-1 border-2 border-black bg-white text-black shadow-[2px_2px_0_0_#000000] hover:bg-black hover:text-white transition-colors flex items-center gap-1 cursor-pointer group"
+                >
+                  <MapPin className="w-3 h-3 shrink-0" />
+                  <span className="text-[11px] font-bold whitespace-nowrap leading-none">
+                    {city.nome}
+                  </span>
+                </button>
+              );
+            })}
         </div>
 
-        {/* Segnaposto cliccabili: Città, Regioni, Paese */}
-        {luoghi.map((luogo) => (
+        {/* Controlli zoom in basso a destra */}
+        <div className="absolute bottom-3 right-3 z-30 flex flex-col gap-1.5">
           <button
-            key={luogo.id}
             type="button"
-            onClick={() => onSelectLuogo(luogo.id)}
-            style={{ left: `${luogo.x}%`, top: `${luogo.y}%` }}
-            className="absolute z-10 -translate-x-1/2 -translate-y-1/2 min-h-[40px] px-2.5 py-1 border-2 border-black bg-white text-black shadow-[2px_2px_0_0_#000000] hover:bg-black hover:text-white active:translate-x-[calc(-50%+1px)] active:translate-y-[calc(-50%+1px)] transition-colors flex items-center gap-1 cursor-pointer group"
+            onClick={handleZoomIn}
+            aria-label="Zoom avanti"
+            className="w-[42px] h-[42px] border-2 border-black bg-white text-black flex items-center justify-center shadow-[3px_3px_0_0_#000000] hover:bg-black hover:text-white transition-colors cursor-pointer"
           >
-            <MapPin className="w-3.5 h-3.5 shrink-0" />
-            <span className="text-left leading-tight">
-              <span className="block text-[11px] font-bold whitespace-nowrap">
-                {luogo.nome}
-              </span>
-              <span className="block text-[9px] text-neutral-500 group-hover:text-neutral-300 font-mono-wf">
-                {luogo.tipo}
-              </span>
-            </span>
+            <Plus className="w-5 h-5" />
           </button>
-        ))}
+          <button
+            type="button"
+            onClick={handleZoomOut}
+            aria-label="Zoom indietro"
+            disabled={zoom <= MIN_ZOOM}
+            className="w-[42px] h-[42px] border-2 border-black bg-white text-black flex items-center justify-center shadow-[3px_3px_0_0_#000000] hover:bg-black hover:text-white disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-black transition-colors cursor-pointer"
+          >
+            <Minus className="w-5 h-5" />
+          </button>
+          {zoom > 1 && (
+            <button
+              type="button"
+              onClick={handleResetZoom}
+              aria-label="Ripristina zoom"
+              className="w-[42px] h-[42px] border-2 border-black bg-black text-white text-[10px] font-mono-wf font-bold flex flex-col items-center justify-center shadow-[3px_3px_0_0_#000000] cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span className="leading-none mt-0.5">1x</span>
+            </button>
+          )}
+        </div>
+
+        {/* Indicatore livello zoom in basso a sinistra */}
+        <div className="absolute bottom-3 left-3 z-20 border border-black bg-white/95 px-2 py-1 text-[10px] font-mono-wf text-black pointer-events-none">
+          Zoom {zoom.toFixed(1)}x · {isZoomed ? 'Città' : 'Regioni'}
+        </div>
       </div>
     </div>
   );

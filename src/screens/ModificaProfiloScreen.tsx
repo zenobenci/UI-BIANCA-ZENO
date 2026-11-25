@@ -7,7 +7,7 @@ interface ModificaProfiloScreenProps {
   me: Utente;
   settings: ImpostazioneProfilo[];
   onBack: () => void;
-  onUpdateProfile: (bio: string, avatarLabel: string) => void;
+  onUpdateProfile: (nome: string, bio: string, avatarLabel: string) => void;
   onToggleSetting: (settingId: string) => void;
 }
 
@@ -20,6 +20,7 @@ export function ModificaProfiloScreen({
   onUpdateProfile,
   onToggleSetting,
 }: ModificaProfiloScreenProps) {
+  const [nome, setNome] = useState(me.nome);
   const [bio, setBio] = useState(me.bio);
   const [avatarLabel, setAvatarLabel] = useState(me.avatarLabel);
   const [savedFeedback, setSavedFeedback] = useState(false);
@@ -31,9 +32,13 @@ export function ModificaProfiloScreen({
     setSavedFeedback(false);
   };
 
-  const handleSaveBio = (e: FormEvent) => {
+  const handleSaveProfile = (e: FormEvent) => {
     e.preventDefault();
-    onUpdateProfile(bio.trim() || me.bio, avatarLabel);
+    onUpdateProfile(
+      nome.trim() || me.nome,
+      bio.trim() || me.bio,
+      avatarLabel
+    );
     setSavedFeedback(true);
   };
 
@@ -66,24 +71,47 @@ export function ModificaProfiloScreen({
           </button>
         </section>
 
-        {/* Bio */}
-        <form onSubmit={handleSaveBio} className="space-y-2">
-          <label
-            htmlFor="edit-bio"
-            className="block text-xs font-bold uppercase tracking-wider"
-          >
-            Bio
-          </label>
-          <textarea
-            id="edit-bio"
-            rows={3}
-            value={bio}
-            onChange={(e) => {
-              setBio(e.target.value);
-              setSavedFeedback(false);
-            }}
-            className="w-full p-2.5 border border-black bg-white text-xs text-black resize-none"
-          />
+        {/* Nome e Bio */}
+        <form onSubmit={handleSaveProfile} className="space-y-3">
+          <div className="space-y-1">
+            <label
+              htmlFor="edit-nome"
+              className="block text-xs font-bold uppercase tracking-wider"
+            >
+              Nome
+            </label>
+            <input
+              id="edit-nome"
+              type="text"
+              value={nome}
+              onChange={(e) => {
+                setNome(e.target.value);
+                setSavedFeedback(false);
+              }}
+              placeholder="Il tuo nome..."
+              className="w-full h-[40px] px-2.5 border border-black bg-white text-xs text-black"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label
+              htmlFor="edit-bio"
+              className="block text-xs font-bold uppercase tracking-wider"
+            >
+              Bio
+            </label>
+            <textarea
+              id="edit-bio"
+              rows={3}
+              value={bio}
+              onChange={(e) => {
+                setBio(e.target.value);
+                setSavedFeedback(false);
+              }}
+              className="w-full p-2.5 border border-black bg-white text-xs text-black resize-none"
+            />
+          </div>
+
           <div className="flex items-center justify-between gap-2">
             <span className="text-[11px] text-neutral-600">
               {savedFeedback ? 'Modifiche salvate ✓' : ''}
