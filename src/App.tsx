@@ -76,8 +76,10 @@ export default function App() {
     return map;
   }, []);
 
-  const currentStack = tabStacks[activeTab];
-  const currentRoute = currentStack[currentStack.length - 1];
+  const currentStack = tabStacks[activeTab] ?? [{ name: 'mappa' }];
+  const currentRoute = currentStack[currentStack.length - 1] ?? {
+    name: 'mappa',
+  };
 
   const pushRoute = (route: ScreenRoute, targetTab: TabId = activeTab) => {
     setTabStacks((prev) => ({
@@ -435,6 +437,22 @@ export default function App() {
       case 'ricetta-dettaglio': {
         const ricetta =
           ricette.find((r) => r.id === currentRoute.ricettaId) || ricette[0];
+        if (!ricetta) {
+          return (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-white">
+              <p className="text-sm font-bold text-black">
+                Nessuna ricetta disponibile
+              </p>
+              <button
+                type="button"
+                onClick={popRoute}
+                className="mt-3 px-4 py-2 border-2 border-black bg-white text-xs font-bold cursor-pointer"
+              >
+                Torna indietro
+              </button>
+            </div>
+          );
+        }
         return (
           <RicettaDettaglioScreen
             ricetta={ricetta}
@@ -458,6 +476,22 @@ export default function App() {
       case 'storia-piatto': {
         const ricetta =
           ricette.find((r) => r.id === currentRoute.ricettaId) || ricette[0];
+        if (!ricetta) {
+          return (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-white">
+              <p className="text-sm font-bold text-black">
+                Storia del piatto non disponibile
+              </p>
+              <button
+                type="button"
+                onClick={popRoute}
+                className="mt-3 px-4 py-2 border-2 border-black bg-white text-xs font-bold cursor-pointer"
+              >
+                Torna indietro
+              </button>
+            </div>
+          );
+        }
         return <StoriaPiattoScreen ricetta={ricetta} onBack={popRoute} />;
       }
 
@@ -553,6 +587,22 @@ export default function App() {
 
       case 'chat-dettaglio': {
         const chat = chats.find((c) => c.id === currentRoute.chatId) || chats[0];
+        if (!chat) {
+          return (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-white">
+              <p className="text-sm font-bold text-black">
+                Nessuna chat disponibile
+              </p>
+              <button
+                type="button"
+                onClick={popRoute}
+                className="mt-3 px-4 py-2 border-2 border-black bg-white text-xs font-bold cursor-pointer"
+              >
+                Torna indietro
+              </button>
+            </div>
+          );
+        }
         return (
           <ChatDettaglioScreen
             chat={chat}
@@ -578,15 +628,9 @@ export default function App() {
   };
 
   return (
-    <main className="wireframe-canvas min-h-dvh w-full flex items-center justify-center p-3 sm:p-5">
+    <main className="wireframe-canvas min-h-screen min-h-dvh w-full flex p-2 sm:p-4 overflow-auto">
       {/* Cornice iPhone 11 (414 x 896) centrata in bianco e nero */}
-      <div
-        className="relative flex items-center justify-center"
-        style={{
-          width:
-            'min(414px, calc((100dvh - 36px) * 414 / 896), calc(100vw - 24px))',
-        }}
-      >
+      <div className="iphone-11-frame m-auto relative flex items-center justify-center shrink-0">
         {/* Tasti hardware wireframe */}
         <div
           aria-hidden="true"
@@ -606,7 +650,7 @@ export default function App() {
         />
 
         {/* Scocca esterna iPhone 11 */}
-        <div className="w-full aspect-[414/896] rounded-[46px] border-2 border-black bg-white p-2.5 shadow-[8px_8px_0_0_#000000]">
+        <div className="w-full h-full rounded-[46px] border-2 border-black bg-white p-2.5 shadow-[8px_8px_0_0_#000000]">
           {/* Schermo interno 414x896 */}
           <div className="relative w-full h-full rounded-[36px] border-2 border-black bg-white overflow-hidden flex flex-col">
             {/* Notch wireframe */}

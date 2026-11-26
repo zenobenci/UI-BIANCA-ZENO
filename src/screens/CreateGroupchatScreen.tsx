@@ -26,7 +26,12 @@ export function CreateGroupchatScreen({
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    const membri = selectedIds.length > 0 ? selectedIds : [utenti[0].id];
+    const membri =
+      selectedIds.length > 0
+        ? selectedIds
+        : utenti[0]?.id
+          ? [utenti[0].id]
+          : [];
     onCreateGroup(
       nomeGruppo.trim() || `Gruppo Cucina (${membri.length + 1})`,
       membri

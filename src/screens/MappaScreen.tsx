@@ -1,7 +1,6 @@
 import {
   FormEvent,
   PointerEvent,
-  WheelEvent,
   useEffect,
   useMemo,
   useRef,
@@ -104,11 +103,27 @@ export function MappaScreen({
     setPan({ x: 0, y: 0 });
   };
 
-  const handleWheel = (e: WheelEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const delta = e.deltaY < 0 ? 0.25 : -0.25;
-    applyZoom(Number((zoom + delta).toFixed(2)));
-  };
+  const zoomRef = useRef(zoom);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onWheel = (e: globalThis.WheelEvent) => {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 0.25 : -0.25;
+      const nextZoom = Math.max(
+        MIN_ZOOM,
+        Math.min(MAX_ZOOM, Number((zoomRef.current + delta).toFixed(2)))
+      );
+      setZoom(nextZoom);
+      setPan((prev) => clampPan(prev.x, prev.y, nextZoom));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
 
   const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('button, input, form')) {
@@ -157,7 +172,7 @@ export function MappaScreen({
   };
 
   return (
-    <div className="relative flex-1 w-full h-full flex flex-col bg-neutral-100 overflow-hidden select-none">
+    <div className="relative flex-1 min-h-0 w-full flex flex-col bg-neutral-100 overflow-hidden select-none">
       {/* Lente di ricerca in alto a destra */}
       <div className="absolute top-3 left-3 right-3 z-30 flex justify-end pointer-events-none">
         {!isSearchOpen ? (
@@ -204,13 +219,12 @@ export function MappaScreen({
       {/* Viewport Mappa Italia */}
       <div
         ref={containerRef}
-        onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
         aria-label="Mappa dell'Italia divisa per regioni"
-        className={`relative flex-1 w-full h-full flex items-center justify-center overflow-hidden bg-neutral-100 ${
+        className={`relative flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden bg-neutral-100 ${
           zoom > 1 ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
         }`}
       >

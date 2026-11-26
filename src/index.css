@@ -2,7 +2,12 @@
 
 @layer base {
   html,
-  body {
+  body,
+  #root {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
     font-family: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
     background-color: #f5f5f5;
     color: #000000;
@@ -16,6 +21,16 @@
     linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
   background-size: 24px 24px;
+}
+
+.iphone-11-frame {
+  /* Explicit responsive width & height with safe fallback for iframe previews */
+  width: min(414px, calc((100vh - 32px) * 414 / 896), calc(100vw - 24px));
+  width: min(414px, calc((100dvh - 32px) * 414 / 896), calc(100vw - 24px));
+  height: min(896px, calc(100vh - 32px), calc((100vw - 24px) * 896 / 414));
+  height: min(896px, calc(100dvh - 32px), calc((100vw - 24px) * 896 / 414));
+  min-width: 280px;
+  min-height: 606px;
 }
 
 .font-mono-wf {
